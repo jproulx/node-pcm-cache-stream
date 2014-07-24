@@ -1,0 +1,32 @@
+{
+  "name": "pcm-cache-stream",
+  "version": "0.1.0",
+  "description": "Adjust and cache PCM audio samples on the fly ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jproulx/node-pcm-cache-stream.git"
+  },
+  "keywords": [
+    "audio",
+    "pcm",
+    "cache",
+    "stream"
+  ],
+  "author": "Jesse Proulx <github@jproulx.net>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jproulx/node-pcm-cache-stream/issues"
+  },
+  "homepage": "https://github.com/jproulx/node-pcm-cache-stream",
+  "devDependencies": {
+    "speaker": "^0.2.1",
+    "throttle": "^1.0.3"
+  },
+  "dependencies": {
+    "debug": "^1.0.4"
+  }
+}
