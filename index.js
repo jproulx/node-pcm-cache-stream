@@ -1,5 +1,5 @@
 var debug  = require('debug')('pcm-cache-stream');
-var Stream = require('stream')
+var Stream = require('readable-stream')
 var util   = require('util');
 /**
  * Calculate the total length of the cached samples
@@ -30,16 +30,20 @@ var PCMCacheStream = function PCMCacheStream (format) {
     function defaults(name, value) {
         return format && format[name] ? format[name] : value;
     }
-    this.cache    = [];
     this.settings = {
-        'sampleRate'   : defaults('sampleRate',   44100),
-        'bitDepth'     : defaults('bitDepth',     16),
-        'channels'     : defaults('channels',     2),
-        'cacheSeconds' : defaults('cacheSeconds', 3)
+        'sampleRate'    : defaults('sampleRate',   44100),
+        'bitDepth'      : defaults('bitDepth',     16),
+        'channels'      : defaults('channels',     2),
+        'cacheDuration' : defaults('cacheDuration', 3)
     };
     this.settings.blockAlign     = this.settings.bitDepth / 8 * this.settings.channels;
     this.settings.bytesPerSecond = this.settings.sampleRate * this.settings.blockAlign;
-    this.settings.cacheSize      = this.settings.bytesPerSecond * this.settings.cacheSeconds;
+    this.settings.cacheSize      = this.settings.bytesPerSecond * this.settings.cacheDuration;
+    // Fill cache with silence at first:
+    var buffer = new Buffer(this.settings.cacheSize);
+    buffer.fill(null)
+    this.cache = [buffer];
+    this.adjustCache();
     debug('Constructor', 'settings', this.settings);
 };
 util.inherits(PCMCacheStream, Stream.Transform);
@@ -59,20 +63,15 @@ PCMCacheStream.prototype.writeCacheData = function writeCacheData (receiver) {
             receiver.write(this.cache[i]);
         }
     }
-}
+};
 /**
- * Re-adjust the cache, and pass the raw PCM data through
+ * Fix the cache to avoid invalid frames that might cause clicking or swap
+ * audio channels. This logic comes from NodeFloyd
  *
- * @private
- * @param   {Object}    chunk
- * @param   {String}    encoding
- * @param   {Function}  callback
+ * @public
  */
-PCMCacheStream.prototype._transform = function _transform (chunk, encoding, callback) {
-    debug('_transform', chunk.length, encoding);
-    this.push(chunk);
-    this.cache.push(chunk);
-    // Shamelessly lifted from nodefloyd
+PCMCacheStream.prototype.adjustCache = function adjustCache () {
+    debug('adjustCache');
     var removed = 0;
     while (getCacheSize(this.cache) > this.settings.cacheSize) {
         removed += this.cache.shift().length;
@@ -86,5 +85,19 @@ PCMCacheStream.prototype._transform = function _transform (chunk, encoding, call
             stillToRemove = 0;
         }
     }
+};
+/**
+ * Re-adjust the cache, and pass the raw PCM data through
+ *
+ * @private
+ * @param   {Object}    chunk
+ * @param   {String}    encoding
+ * @param   {Function}  callback
+ */
+PCMCacheStream.prototype._transform = function _transform (chunk, encoding, callback) {
+    debug('_transform', chunk.length, encoding);
+    this.push(chunk);
+    this.cache.push(chunk);
+    this.adjustCache();
     return callback.call(this);
 };

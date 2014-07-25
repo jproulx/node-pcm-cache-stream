@@ -1,6 +1,6 @@
 {
   "name": "pcm-cache-stream",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Adjust and cache PCM audio samples on the fly ",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "throttle": "^1.0.3"
   },
   "dependencies": {
-    "debug": "^1.0.4"
+    "debug": "^1.0.4",
+    "readable-stream": "^1.0.27-1"
   }
 }
