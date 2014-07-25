@@ -51,7 +51,6 @@ module.exports = PCMCacheStream;
  * @param   {Writable}  receiver
  */
 PCMCacheStream.prototype.writeCacheData = function writeCacheData (receiver) {
-    debug('writeCacheData', 'receiver writable', receiver.writable);
     debug('writeCacheData', 'chunks to write', this.cache.length);
     if (receiver && receiver.writable) {
         var i = 0;
