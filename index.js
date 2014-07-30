@@ -1,5 +1,5 @@
 var debug  = require('debug')('pcm-cache-stream');
-var Stream = require('readable-stream')
+var Stream = require('stream');
 var util   = require('util');
 /**
  * Calculate the total length of the cached samples
@@ -24,16 +24,16 @@ function getCacheSize (cache) {
  */
 var PCMCacheStream = function PCMCacheStream (format) {
     if (!(this instanceof PCMCacheStream)) {
-        return new PCMCacheStream(format);
+        return new PCMCacheStream(format || {});
     }
-    Stream.Transform.call(this, format || {});
+    Stream.Transform.call(this);
     function defaults(name, value) {
         return format && format[name] ? format[name] : value;
     }
     this.settings = {
-        'sampleRate'    : defaults('sampleRate',   44100),
-        'bitDepth'      : defaults('bitDepth',     16),
-        'channels'      : defaults('channels',     2),
+        'sampleRate'    : defaults('sampleRate',    44100),
+        'bitDepth'      : defaults('bitDepth',      16),
+        'channels'      : defaults('channels',      2),
         'cacheDuration' : defaults('cacheDuration', 3)
     };
     this.settings.blockAlign     = this.settings.bitDepth / 8 * this.settings.channels;
@@ -47,22 +47,24 @@ var PCMCacheStream = function PCMCacheStream (format) {
     debug('Constructor', 'settings', this.settings);
 };
 util.inherits(PCMCacheStream, Stream.Transform);
-module.exports = PCMCacheStream;
 /**
- * Write the current cache to a Writable stream
+ * Intercept the pipe method so that we can write directly to the destination
  *
  * @public
- * @param   {Writable}  receiver
+ * @param   {Object}    destination
+ * @param   {Object}    options
  */
-PCMCacheStream.prototype.writeCacheData = function writeCacheData (receiver) {
-    debug('writeCacheData', 'chunks to write', this.cache.length);
-    if (receiver && receiver.writable) {
+PCMCacheStream.prototype.pipe = function (destination, options) {
+    debug('pipe', destination.writable, options);
+    var res = PCMCacheStream.super_.prototype.pipe.call(this, destination, options)
+    if (destination.writable) {
         var i = 0;
         var length = this.cache.length;
         for (; i < length; i++) {
-            receiver.write(this.cache[i]);
+            destination.write(this.cache[i]);
         }
     }
+    return res;
 };
 /**
  * Fix the cache to avoid invalid frames that might cause clicking or swap
@@ -96,8 +98,9 @@ PCMCacheStream.prototype.adjustCache = function adjustCache () {
  */
 PCMCacheStream.prototype._transform = function _transform (chunk, encoding, callback) {
     debug('_transform', chunk.length, encoding);
-    this.push(chunk);
     this.cache.push(chunk);
     this.adjustCache();
+    this.push(chunk);
     return callback.call(this);
 };
+module.exports = PCMCacheStream;

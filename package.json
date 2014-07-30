@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/jproulx/node-pcm-cache-stream",
   "devDependencies": {
+    "dev-null": "^0.1.1",
     "speaker": "^0.2.1",
     "throttle": "^1.0.3"
   },
